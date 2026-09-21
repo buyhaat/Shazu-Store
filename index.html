@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Fast and simple TikTok video downloader." />
+  <title>TikDown — TikTok Video Downloader</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #08090d;
+      --card: rgba(255, 255, 255, 0.07);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --text: #ffffff;
+      --muted: #a7aab5;
+      --primary: #fe2c55;
+      --primary-dark: #e51f46;
+      --cyan: #25f4ee;
+      --input: rgba(255, 255, 255, 0.08);
+      --success: #38d996;
+      --danger: #ff5c70;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(254, 44, 85, .20), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(37, 244, 238, .14), transparent 28%),
+        linear-gradient(135deg, #07080c 0%, #0d1018 50%, #07080c 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent);
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 32px));
+      margin: auto;
+    }
+
+    header {
+      padding: 22px 0;
+      position: relative;
+      z-index: 5;
+    }
+
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), #ff5e7c);
+      box-shadow: 0 8px 30px rgba(254,44,85,.28);
+      font-size: 19px;
+    }
+
+    .badge {
+      color: var(--muted);
+      font-size: 13px;
+      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+    }
+
+    main {
+      padding: 70px 0 80px;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(37,244,238,.2);
+      background: rgba(37,244,238,.06);
+      color: #8ff9f5;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 78px);
+      line-height: .98;
+      letter-spacing: -4px;
+      margin-bottom: 20px;
+    }
+
+    h1 span {
+      background: linear-gradient(
+        90deg,
+        #fff 10%,
+        #ff5275 45%,
+        #25f4ee 90%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      max-width: 650px;
+      margin: auto;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .downloader {
+      max-width: 760px;
+      margin: 40px auto 0;
+      padding: 9px;
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      background: rgba(255,255,255,.055);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 30px 80px rgba(0,0,0,.35);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 9px;
+    }
+
+    .url-input {
+      flex: 1;
+      min-width: 0;
+      height: 58px;
+      border: 0;
+      outline: 0;
+      border-radius: 15px;
+      background: var(--input);
+      color: white;
+      padding: 0 18px;
+      font-size: 15px;
+      border: 1px solid transparent;
+      transition: .2s;
+    }
+
+    .url-input::placeholder {
+      color: #7d808b;
+    }
+
+    .url-input:focus {
+      border-color: rgba(37,244,238,.35);
+      box-shadow: 0 0 0 4px rgba(37,244,238,.05);
+    }
+
+    .download-btn {
+      height: 58px;
+      border: 0;
+      border-radius: 15px;
+      padding: 0 25px;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), #ff1748);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .2s;
+      white-space: nowrap;
+      box-shadow: 0 10px 25px rgba(254,44,85,.2);
+    }
+
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(254,44,85,.3);
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .download-btn.loading {
+      opacity: .7;
+      pointer-events: none;
+    }
+
+    .hint {
+      text-align: left;
+      color: #737783;
+      font-size: 12px;
+      padding: 10px 8px 2px;
+    }
+
+    .message {
+      display: none;
+      margin-top: 16px;
+      padding: 13px 15px;
+      border-radius: 13px;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      color: #ffb4bf;
+      background: rgba(255,92,112,.08);
+      border: 1px solid rgba(255,92,112,.18);
+    }
+
+    .message.success {
+      color: #9df0c9;
+      background: rgba(56,217,150,.08);
+      border: 1px solid rgba(56,217,150,.18);
+    }
+
+    .result {
+      display: none;
+      max-width: 760px;
+      margin: 22px auto 0;
+      padding: 18px;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      background: rgba(255,255,255,.045);
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result-content {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .thumbnail {
+      width: 125px;
+      height: 160px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, #20232d, #101219);
+      display: grid;
+      place-items: center;
+      color: #777;
+    }
+
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .result-info {
+      flex: 1;
+    }
+
+    .result-info h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .result-info p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .save-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 17px;
+      border-radius: 11px;
+      color: white;
+      background: #20232c;
+      border: 1px solid var(--card-border);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .save-btn:hover {
+      background: #292d38;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 80px;
+    }
+
+    .feature {
+      padding: 25px;
+      border: 1px solid var(--card-border);
+      background: rgba(255,255,255,.035);
+      border-radius: 18px;
+      transition: .25s;
+    }
+
+    .feature:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,.055);
+    }
+
+    .feature-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      margin-bottom: 17px;
+      background: rgba(254,44,85,.1);
+      font-size: 19px;
+    }
+
+    .feature h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .how {
+      margin-top: 90px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 30px;
+      letter-spacing: -1px;
+      margin-bottom: 35px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .step {
+      position: relative;
+    }
+
+    .step-number {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 14px;
+      background: linear-gradient(135deg, var(--primary), #ff5b79);
+      font-weight: 800;
+    }
+
+    .step h3 {
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .step p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    footer {
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding: 25px 0;
+      color: #727580;
+      text-align: center;
+      font-size: 12px;
+      margin-top: 90px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255,255,255,.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: -3px;
+      margin-right: 7px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 700px) {
+      main {
+        padding-top: 45px;
+      }
+
+      h1 {
+        letter-spacing: -2.5px;
+      }
+
+      .input-row {
+        flex-direction: column;
+      }
+
+      .download-btn {
+        width: 100%;
+      }
+
+      .features,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .result-content {
+        align-items: flex-start;
+      }
+
+      .thumbnail {
+        width: 95px;
+        height: 125px;
+      }
+
+      .badge {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="container nav">
+      <div class="logo">
+        <div class="logo-icon">↓</div>
+        <span>TikDown</span>
+      </div>
+
+      <div class="badge">Fast • Simple • Free</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+
+      <div class="eyebrow">
+        <span class="dot"></span>
+        TikTok Video Downloader
+      </div>
+
+      <h1>
+        Download your<br />
+        <span>favorite videos.</span>
+      </h1>
+
+      <p class="subtitle">
+        Paste a TikTok video URL below and download the video through
+        your authorized download service.
+      </p>
+
+      <div class="downloader">
+
+        <div class="input-row">
+          <input
+            id="urlInput"
+            class="url-input"
+            type="url"
+            autocomplete="off"
+            placeholder="Paste TikTok video link here..."
+            aria-label="TikTok video URL"
+          />
+
+          <button id="downloadBtn" class="download-btn">
+            Download
+          </button>
+        </div>
+
+        <div class="hint">
+          Example: https://www.tiktok.com/@username/video/123456789
+        </div>
+
+        <div id="message" class="message"></div>
+      </div>
+
+      <div id="result" class="result">
+        <div class="result-content">
+
+          <div class="thumbnail">
+            <span id="thumbPlaceholder">VIDEO</span>
+            <img id="thumbnailImage" alt="Video thumbnail" />
+          </div>
+
+          <div class="result-info">
+            <h3 id="resultTitle">Video ready</h3>
+            <p id="resultDescription">
+              Your download response will appear here.
+            </p>
+
+            <a
+              id="saveBtn"
+              class="save-btn"
+              href="#"
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Save Video
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="features">
+
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Fast & Simple</h3>
+          <p>
+            Clean interface designed for quick access on desktop
+            and mobile devices.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">🔗</div>
+          <h3>Easy URL</h3>
+          <p>
+            Just paste a TikTok video URL and let your authorized
+            backend handle the download.
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">📱</div>
+          <h3>Mobile Friendly</h3>
+          <p>
+            Responsive layout that works smoothly across phones,
+            tablets and computers.
+          </p>
+        </div>
+
+      </div>
+
+      <section class="how">
+
+        <h2 class="section-title">How it works</h2>
+
+        <div class="steps">
+
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Copy the link</h3>
+            <p>
+              Copy the URL of the TikTok video you are authorized
+              to download.
+            </p>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Paste it here</h3>
+            <p>
+              Paste the video URL into the input box above.
+            </p>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Download</h3>
+            <p>
+              Your backend returns the authorized downloadable
+              media URL.
+            </p>
+          </div>
+
+        </div>
+
+      </section>
+
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      © 2026 TikDown. Use this service only for content you have
+      permission to download.
+    </div>
+  </footer>
+
+
+  <script>
+    /*
+      ==========================================
+      CONFIGURATION
+      ==========================================
+
+      Replace this URL with your own backend endpoint.
+
+      Expected request:
+        POST /download
+        Content-Type: application/json
+
+        {
+          "url": "https://www.tiktok.com/..."
+        }
+
+      Example response:
+        {
+          "success": true,
+          "title": "My TikTok Video",
+          "thumbnail": "https://example.com/thumb.jpg",
+          "downloadUrl": "https://example.com/video.mp4"
+        }
+
+      The exact backend implementation is up to you.
+    */
+
+    const API_ENDPOINT =
+      "https://your-api.example.com/download";
+
+
+    const urlInput = document.getElementById("urlInput");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const message = document.getElementById("message");
+
+    const result = document.getElementById("result");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultDescription = document.getElementById("resultDescription");
+
+    const saveBtn = document.getElementById("saveBtn");
+
+    const thumbnailImage =
+      document.getElementById("thumbnailImage");
+
+    const thumbPlaceholder =
+      document.getElementById("thumbPlaceholder");
+
+
+    /*
+      Validate TikTok URL
+    */
+    function isTikTokUrl(value) {
+      try {
+        const url = new URL(value.trim());
+
+        const hostname =
+          url.hostname.toLowerCase().replace(/^www\./, "");
+
+        return (
+          hostname === "tiktok.com" ||
+          hostname.endsWith(".tiktok.com")
+        );
+      } catch {
+        return false;
+      }
+    }
+
+
+    /*
+      Show message
+    */
+    function showMessage(text, type = "error") {
+      message.textContent = text;
+      message.className = "message show " + type;
+    }
+
+
+    /*
+      Hide message
+    */
+    function hideMessage() {
+      message.className = "message";
+      message.textContent = "";
+    }
+
+
+    /*
+      Show result card
+    */
+    function showResult(data) {
+
+      result.classList.add("show");
+
+      resultTitle.textContent =
+        data.title || "Video ready";
+
+      resultDescription.textContent =
+        data.description ||
+        "Your video is ready to download.";
+
+      if (data.thumbnail) {
+
+        thumbnailImage.src = data.thumbnail;
+        thumbnailImage.style.display = "block";
+        thumbPlaceholder.style.display = "none";
+
+      } else {
+
+        thumbnailImage.style.display = "none";
+        thumbPlaceholder.style.display = "block";
+
+      }
+
+      if (data.downloadUrl) {
+        saveBtn.href = data.downloadUrl;
+        saveBtn.style.display = "inline-flex";
+      } else {
+        saveBtn.style.display = "none";
+      }
+    }
+
+
+    /*
+      Download handler
+    */
+    async function handleDownload() {
+
+      hideMessage();
+
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        showMessage("Please paste a TikTok video URL.");
+        urlInput.focus();
+        return;
+      }
+
+      if (!isTikTokUrl(url)) {
+        showMessage("Please enter a valid TikTok URL.");
+        urlInput.focus();
+        return;
+      }
+
+
+      downloadBtn.classList.add("loading");
+      downloadBtn.innerHTML =
+        '<span class="spinner"></span>Processing...';
+
+      result.classList.remove("show");
+
+
+      try {
+
+        /*
+          IMPORTANT:
+          Browser-only JavaScript cannot reliably fetch
+          TikTok's protected media directly.
+
+          Your backend should receive the URL and return
+          an authorized download URL.
+        */
+
+        const response = await fetch(API_ENDPOINT, {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            url: url
+          })
+        });
+
+
+        if (!response.ok) {
+          throw new Error(
+            "Server returned HTTP " + response.status
+          );
+        }
+
+
+        const data = await response.json();
+
+
+        if (!data.success) {
+          throw new Error(
+            data.message ||
+            "Unable to process this video."
+          );
+        }
+
+
+        if (!data.downloadUrl) {
+          throw new Error(
+            "The server did not return a download URL."
+          );
+        }
+
+
+        showResult(data);
+
+        showMessage(
+          "Video is ready. Click “Save Video” to continue.",
+          "success"
+        );
+
+
+      } catch (error) {
+
+        console.error(error);
+
+        /*
+          This commonly happens when the placeholder API
+          endpoint has not been replaced yet.
+        */
+
+        if (
+          API_ENDPOINT.includes("your-api.example.com")
+        ) {
+
+          showMessage(
+            "Backend API is not configured yet. Replace API_ENDPOINT in this file with your own authorized download API."
+          );
+
+        } else {
+
+          showMessage(
+            error.message ||
+            "Something went wrong. Please try again."
+          );
+        }
+
+      } finally {
+
+        downloadBtn.classList.remove("loading");
+
+        downloadBtn.textContent = "Download";
+      }
+    }
+
+
+    downloadBtn.addEventListener(
+      "click",
+      handleDownload
+    );
+
+
+    /*
+      Allow Enter key
+    */
+    urlInput.addEventListener("keydown", function(event) {
+
+      if (event.key === "Enter") {
+        handleDownload();
+      }
+
+    });
+
+
+    /*
+      Paste event
+    */
+    urlInput.addEventListener("paste", function() {
+
+      setTimeout(() => {
+
+        const value = urlInput.value.trim();
+
+        if (value && isTikTokUrl(value)) {
+          hideMessage();
+        }
+
+      }, 50);
+
+    });
+  </script>
+
+</body>
+</html>
